@@ -72,3 +72,129 @@ export const resetDemo = mutation({
     });
   },
 });
+
+export const reserveGuarded = mutation({
+  args: {
+    sku: v.string(),
+    expectedVersion: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const item = await bySku(ctx, args.sku);
+    if (item.version !== args.expectedVersion) {
+      throw new ConvexError({
+        code: "STALE_DEPENDENCY",
+        sku: item.sku,
+        observedVersion: args.expectedVersion,
+        currentVersion: item.version,
+        requiredAction: "READ_AND_REPLAN",
+      });
+    }
+    if (item.available < 1) {
+      throw new ConvexError({
+        code: "INSUFFICIENT_INVENTORY",
+        sku: item.sku,
+        available: item.available,
+      });
+    }
+    const version = item.version + 1;
+    const available = item.available - 1;
+    await ctx.db.patch(item._id, { available, version });
+    await ctx.db.insert("events", {
+      kind: "COMMIT",
+      sku: item.sku,
+      detail: JSON.stringify({
+        pricePerHour: item.pricePerHour,
+        available,
+        version,
+      }),
+    });
+    return {
+      success: true as const,
+      sku: item.sku,
+      pricePerHour: item.pricePerHour,
+      available,
+      version,
+    };
+  },
+});
+
+export const reserveUnguarded = mutation({
+  args: { sku: v.string() },
+  handler: async (ctx, args) => {
+    const item = await bySku(ctx, args.sku);
+    if (item.available < 1) {
+      throw new ConvexError({
+        code: "INSUFFICIENT_INVENTORY",
+        sku: item.sku,
+        available: item.available,
+      });
+    }
+    const version = item.version + 1;
+    const available = item.available - 1;
+    await ctx.db.patch(item._id, { available, version });
+    await ctx.db.insert("events", {
+      kind: "COMMIT",
+      sku: item.sku,
+      detail: JSON.stringify({
+        pricePerHour: item.pricePerHour,
+        available,
+        version,
+      }),
+    });
+    return {
+      success: true as const,
+      sku: item.sku,
+      pricePerHour: item.pricePerHour,
+      available,
+      version,
+    };
+  },
+});
+
+export const externalReprice = mutation({
+  args: {
+    sku: v.string(),
+    pricePerHour: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const item = await bySku(ctx, args.sku);
+    const version = item.version + 1;
+    await ctx.db.patch(item._id, {
+      pricePerHour: args.pricePerHour,
+      version,
+    });
+    await ctx.db.insert("events", {
+      kind: "EXTERNAL",
+      sku: item.sku,
+      detail: JSON.stringify({
+        action: "reprice",
+        pricePerHour: args.pricePerHour,
+        version,
+      }),
+    });
+    return { sku: item.sku, pricePerHour: args.pricePerHour, version };
+  },
+});
+
+export const externalReserve = mutation({
+  args: { sku: v.string() },
+  handler: async (ctx, args) => {
+    const item = await bySku(ctx, args.sku);
+    if (item.available < 1) {
+      throw new ConvexError({
+        code: "INSUFFICIENT_INVENTORY",
+        sku: item.sku,
+        available: item.available,
+      });
+    }
+    const version = item.version + 1;
+    const available = item.available - 1;
+    await ctx.db.patch(item._id, { available, version });
+    await ctx.db.insert("events", {
+      kind: "EXTERNAL",
+      sku: item.sku,
+      detail: JSON.stringify({ action: "reserve", available, version }),
+    });
+    return { sku: item.sku, available, version };
+  },
+});
