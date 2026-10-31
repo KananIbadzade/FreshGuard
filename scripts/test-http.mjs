@@ -27,10 +27,10 @@ async function stopServer(child) {
   await once(child, "exit");
 }
 
-function post(path, body) {
+function post(path, body, origin = UI) {
   return fetch(`${base}${path}`, {
     method: "POST",
-    headers: { Origin: UI, "Content-Type": "application/json" },
+    headers: { Origin: origin, "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 }
@@ -69,6 +69,21 @@ try {
   }
   const foreign = await preflight("http://evil.example");
   check("preflight from another origin does not echo it", foreign.allow === UI, foreign);
+
+  await convex.mutation(api.inventory.resetDemo, {});
+  await convex.mutation(api.inventory.externalReprice, { sku: "H100", pricePerHour: 10 });
+  for (const path of ["/reset", "/run-both"]) {
+    const res = await post(path, undefined, "http://evil.example");
+    check(`POST ${path} from another origin returns 403`, res.status === 403, res.status);
+  }
+  const untouched = (await seed())[0];
+  check(
+    "cross-site POSTs do not touch the demo",
+    untouched.pricePerHour === 10 && untouched.version === 2,
+    untouched,
+  );
+  const noOrigin = await fetch(`${base}/reset`, { method: "POST" });
+  check("POST without an Origin header (curl) is allowed", noOrigin.status === 200, noOrigin.status);
 
   await convex.mutation(api.inventory.externalReprice, { sku: "H100", pricePerHour: 10 });
   await convex.mutation(api.inventory.logEvent, { kind: "READ", detail: "{}", mode: "on" });

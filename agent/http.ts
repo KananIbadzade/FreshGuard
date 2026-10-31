@@ -104,6 +104,12 @@ async function handle(req: http.IncomingMessage, res: http.ServerResponse) {
 }
 
 const server = http.createServer(async (req, res) => {
+  // A bodyless cross-site POST is a CORS "simple request": the browser sends it without a preflight.
+  const origin = req.headers.origin;
+  if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+    send(req, res, 403, { error: "origin not allowed" });
+    return;
+  }
   if (req.method === "OPTIONS") {
     res.writeHead(204, corsHeaders(req));
     res.end();
