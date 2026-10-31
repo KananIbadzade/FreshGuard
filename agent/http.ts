@@ -49,12 +49,13 @@ function messageOf(err: unknown) {
   return err instanceof Error ? err.message : String(err);
 }
 
-// Runs in the background. A failure is logged as FINAL in each column so the UI is not left waiting.
-function watch(runId: string, modes: Mode[], done: Promise<unknown>) {
+// Runs in the background and holds the lock until `done` settles.
+// A failure is logged as FINAL in each of `failModes` so the UI is not left waiting.
+function watch(runId: string, done: Promise<unknown>, failModes: Mode[]) {
   done
     .catch(async (err) => {
       console.error(`run ${runId} failed:`, err);
-      for (const mode of modes) {
+      for (const mode of failModes) {
         await convex
           .mutation(api.inventory.logEvent, { kind: "FINAL", detail: `run failed: ${messageOf(err)}`, mode, runId })
           .catch(() => {});
@@ -77,7 +78,8 @@ async function handle(req: http.IncomingMessage, res: http.ServerResponse) {
     busy = true;
     try {
       const { runId, done } = await startBoth();
-      watch(runId, ["off", "on"], done);
+      // startBoth logs FINAL for whichever agent failed.
+      watch(runId, done, []);
       return send(req, res, 202, { runId });
     } catch (err) {
       busy = false;
@@ -94,7 +96,7 @@ async function handle(req: http.IncomingMessage, res: http.ServerResponse) {
     if (busy) return send(req, res, 409, { error: "a run is in progress" });
     busy = true;
     const runId = crypto.randomUUID();
-    watch(runId, [body.mode], runAgent(body.mode, runId));
+    watch(runId, runAgent(body.mode, runId), [body.mode]);
     return send(req, res, 202, { runId });
   }
 

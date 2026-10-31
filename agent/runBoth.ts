@@ -47,10 +47,27 @@ export async function startBoth(): Promise<{ runId: string; done: Promise<BothRe
     }
   };
 
-  const done = Promise.all([
+  // allSettled, not all: a failed agent must not release the caller while the other one can still write.
+  const done = Promise.allSettled([
     runAgent("off", runId, { afterFirstRead }),
     runAgent("on", runId, { afterFirstRead }),
-  ]).then(([off, on]) => ({ runId, off, on }));
+  ]).then(async ([off, on]) => {
+    const settled = [
+      ["off", off],
+      ["on", on],
+    ] as const;
+    for (const [mode, result] of settled) {
+      if (result.status === "rejected") {
+        const message = result.reason instanceof Error ? result.reason.message : String(result.reason);
+        await convex
+          .mutation(api.inventory.logEvent, { kind: "FINAL", detail: `run failed: ${message}`, mode, runId })
+          .catch(() => {});
+      }
+    }
+    if (off.status === "rejected") throw off.reason;
+    if (on.status === "rejected") throw on.reason;
+    return { runId, off: off.value, on: on.value };
+  });
   return { runId, done };
 }
 

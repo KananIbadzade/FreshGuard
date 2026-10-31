@@ -37,6 +37,9 @@ export function App() {
   );
   const running =
     pending || (runId !== null && !(finished.has("off") && finished.has("on")));
+  // Falls back to the newest run so a page reload or a CLI run still shows up.
+  const shownRunId =
+    runId ?? (events ?? []).filter((e) => e.runId).at(-1)?.runId ?? null;
 
   async function runBoth() {
     setError(null);
@@ -97,8 +100,18 @@ export function App() {
       {error && <p className="error-line">{error}</p>}
       <InventoryPanel items={items} />
       <div className="columns">
-        <TracePanel title="Without FreshGuard" mode="off" events={events} />
-        <TracePanel title="With FreshGuard" mode="on" events={events} />
+        <TracePanel
+          title="Without FreshGuard"
+          mode="off"
+          runId={shownRunId}
+          events={events}
+        />
+        <TracePanel
+          title="With FreshGuard"
+          mode="on"
+          runId={shownRunId}
+          events={events}
+        />
       </div>
     </main>
   );

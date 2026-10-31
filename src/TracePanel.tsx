@@ -81,13 +81,17 @@ function Receipt({ commit }: { commit: Event }) {
 export function TracePanel({
   title,
   mode,
+  runId,
   events,
 }: {
   title: string;
   mode: "on" | "off";
+  runId: string | null;
   events: Event[] | undefined;
 }) {
-  const rows = (events ?? []).filter((e) => e.mode === mode);
+  const rows = (events ?? []).filter(
+    (e) => e.mode === mode && e.runId === runId,
+  );
   const commit = rows.filter((e) => e.kind === "COMMIT").at(-1);
 
   return (
