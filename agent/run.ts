@@ -124,6 +124,7 @@ export async function runAgent(
         max_tokens: 1024,
         system: SYSTEM_PROMPT,
         tools,
+        tool_choice: { type: "auto", disable_parallel_tool_use: true },
         messages,
       });
 
@@ -198,7 +199,7 @@ export async function runAgent(
           },
         ],
       });
-      // Keep the same tools list: thinking blocks in the history are bound to it.
+      // The history holds tool_use blocks, so tools must stay defined; tool_choice "none" blocks new calls.
       const finalResponse = await anthropic.messages.create({
         model,
         max_tokens: 1024,
