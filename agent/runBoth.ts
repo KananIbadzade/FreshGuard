@@ -1,10 +1,13 @@
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../convex/_generated/api.js";
-import { runAgent } from "./run.ts";
+import { runAgent, type RunResult } from "./run.ts";
 
 const BARRIER_TIMEOUT_MS = 90_000;
 
-export async function runBoth() {
+export type BothResult = { runId: string; off: RunResult; on: RunResult };
+
+// Validates env and resets before returning, so a missing key never wipes the demo.
+export async function startBoth(): Promise<{ runId: string; done: Promise<BothResult> }> {
   if (!process.env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is not set");
   if (!process.env.ANTHROPIC_MODEL) throw new Error("ANTHROPIC_MODEL is not set");
   const convexUrl = process.env.CONVEX_URL || process.env.VITE_CONVEX_URL;
@@ -44,9 +47,14 @@ export async function runBoth() {
     }
   };
 
-  const [off, on] = await Promise.all([
+  const done = Promise.all([
     runAgent("off", runId, { afterFirstRead }),
     runAgent("on", runId, { afterFirstRead }),
-  ]);
-  return { runId, off, on };
+  ]).then(([off, on]) => ({ runId, off, on }));
+  return { runId, done };
+}
+
+export async function runBoth(): Promise<BothResult> {
+  const { done } = await startBoth();
+  return done;
 }
