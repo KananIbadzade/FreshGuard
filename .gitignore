@@ -1,7 +1,6 @@
 node_modules/
-.env
-.env.local
-.env*.local
+.env*
+!.env*.example
 .convex/
 dist/
 .DS_Store
@@ -11,3 +10,6 @@ dist/
 scratch/
 *.mov
 *.mp4
+*.tsbuildinfo
+*.pem
+*.key
