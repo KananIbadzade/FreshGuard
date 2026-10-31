@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { ConvexError } from "convex/values";
 import { api } from "../convex/_generated/api";
@@ -7,6 +7,7 @@ import { TracePanel } from "./TracePanel";
 
 const AGENT_URL = "http://127.0.0.1:8787";
 const AGENT_DOWN = `Agent server not reachable at ${AGENT_URL}. Is npm run dev:agent running?`;
+const RUN_TIMEOUT_MS = 120_000;
 
 function messageOf(err: unknown): string {
   if (err instanceof ConvexError) return JSON.stringify(err.data);
@@ -35,8 +36,20 @@ export function App() {
       .filter((e) => e.kind === "FINAL" && e.runId === runId)
       .map((e) => e.mode),
   );
-  const running =
-    pending || (runId !== null && !(finished.has("off") && finished.has("on")));
+  const bothFinished = finished.has("off") && finished.has("on");
+  const running = pending || (runId !== null && !bothFinished);
+
+  // If the agent server dies mid-run no FINAL arrives, so stop waiting.
+  useEffect(() => {
+    if (runId === null || bothFinished) return;
+    const timer = setTimeout(() => {
+      setRunId(null);
+      setError(
+        `No result after ${RUN_TIMEOUT_MS / 1000}s. Check the agent server, then Reset.`,
+      );
+    }, RUN_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [runId, bothFinished]);
   // Falls back to the newest run so a page reload or a CLI run still shows up.
   const shownRunId =
     runId ?? (events ?? []).filter((e) => e.runId).at(-1)?.runId ?? null;
@@ -92,8 +105,10 @@ export function App() {
         <button className="primary" onClick={runBoth} disabled={running}>
           {running ? "Running…" : "Run both"}
         </button>
-        <button onClick={repriceH100}>Reprice H100 → $10</button>
-        <button onClick={reset} disabled={running}>
+        <button onClick={repriceH100} disabled={running}>
+          Reprice H100 → $10
+        </button>
+        <button onClick={reset} disabled={pending}>
           Reset
         </button>
       </div>
