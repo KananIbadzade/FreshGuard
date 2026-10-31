@@ -9,9 +9,12 @@
     "dev:convex": "convex dev",
     "dev:agent": "node --env-file=.env.local agent/http.ts",
     "dev:ui": "vite",
-    "test": "npm run test:writes && npm run test:race && npm run test:mcp",
+    "test": "npm run test:writes && npm run test:race && npm run test:mcp && npm run test:agent && npm run test:http",
+    "test:live": "LIVE=1 npm test",
     "test:writes": "node --env-file=.env.local scripts/test-writes.mjs",
     "test:mcp": "node --env-file=.env.local scripts/test-mcp.mjs",
+    "test:agent": "node --env-file=.env.local scripts/test-agent.mjs",
+    "test:http": "node --env-file=.env.local scripts/test-http.mjs",
     "test:race": "node --env-file=.env.local scripts/race-test.mjs",
     "agent": "node --env-file=.env.local agent/cli.ts"
   },

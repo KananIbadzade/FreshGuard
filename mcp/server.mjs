@@ -61,12 +61,12 @@ if (guarded) {
     "reserve_inventory",
     {
       description:
-        "Reserve one unit of sku. Pass expectedVersion from the latest read_inventory result you used to decide. If you receive STALE_DEPENDENCY, do not retry this call and do not reuse the old version. Call read_inventory again and re-plan.",
+        "Reserve one unit of sku. Pass expectedVersion = the version of that same sku's row in the latest read_inventory result you used to decide. Versions are per row. If you receive STALE_DEPENDENCY, do not retry this call and do not reuse the old version. Call read_inventory again and re-plan.",
       inputSchema: {
         sku: z.string().describe("GPU sku from read_inventory"),
         expectedVersion: z
           .number()
-          .describe("version from the read_inventory snapshot this decision uses"),
+          .describe("version of this sku's row in the read_inventory snapshot this decision uses"),
       },
     },
     async ({ sku, expectedVersion }) => {
