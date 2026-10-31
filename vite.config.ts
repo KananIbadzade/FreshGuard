@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react";
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const convexUrl =
-    env.CONVEX_URL ?? env.VITE_CONVEX_URL ?? "http://127.0.0.1:3210";
+    env.CONVEX_URL || env.VITE_CONVEX_URL || "http://127.0.0.1:3210";
 
   return {
     plugins: [react()],

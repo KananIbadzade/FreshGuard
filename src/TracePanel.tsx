@@ -55,25 +55,30 @@ function StaleCard({ event }: { event: Event }) {
 }
 
 function Receipt({ commit }: { commit: Event }) {
-  const price: number = parse(commit.detail)?.pricePerHour;
-  const over = price > BUDGET;
+  const raw: unknown = parse(commit.detail)?.pricePerHour;
+  const price = typeof raw === "number" ? raw : undefined;
+  const over = price !== undefined && price > BUDGET;
+  const verdictClass =
+    price === undefined ? "" : over ? " over" : " within";
   return (
-    <div className={over ? "receipt over" : "receipt within"}>
+    <div className={`receipt${verdictClass}`}>
       <div className="receipt-row">
         <span>GPU</span>
         <strong>{commit.sku}</strong>
       </div>
       <div className="receipt-row">
         <span>Price paid</span>
-        <strong>${price}/hr</strong>
+        <strong>{price === undefined ? "—" : `$${price}/hr`}</strong>
       </div>
       <div className="receipt-row">
         <span>Budget</span>
         <strong>${BUDGET}/hr</strong>
       </div>
-      <div className="receipt-verdict">
-        {over ? "OVER BUDGET" : "WITHIN BUDGET"}
-      </div>
+      {price !== undefined && (
+        <div className="receipt-verdict">
+          {over ? "OVER BUDGET" : "WITHIN BUDGET"}
+        </div>
+      )}
     </div>
   );
 }

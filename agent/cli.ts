@@ -19,9 +19,15 @@ if (mode === "both") {
   console.log(`${receipt(off)} | ${receipt(on)}`);
 } else if (mode === "on" || mode === "off") {
   const convexUrl = process.env.CONVEX_URL || process.env.VITE_CONVEX_URL;
-  if (!convexUrl) {
-    console.error("CONVEX_URL is not set");
-    process.exit(1);
+  for (const [name, value] of [
+    ["ANTHROPIC_API_KEY", process.env.ANTHROPIC_API_KEY],
+    ["ANTHROPIC_MODEL", process.env.ANTHROPIC_MODEL],
+    ["CONVEX_URL", convexUrl],
+  ]) {
+    if (!value) {
+      console.error(`${name} is not set`);
+      process.exit(1);
+    }
   }
   await new ConvexHttpClient(convexUrl).mutation(api.inventory.resetDemo, {});
   console.log(receipt(await runAgent(mode, crypto.randomUUID())));

@@ -89,7 +89,12 @@ async function handle(req: http.IncomingMessage, res: http.ServerResponse) {
 
   if (req.url === "/run") {
     const raw = await readBody(req);
-    const body = raw ? (JSON.parse(raw) as { mode?: Mode }) : {};
+    let body: { mode?: Mode };
+    try {
+      body = raw ? (JSON.parse(raw) ?? {}) : {};
+    } catch {
+      return send(req, res, 400, { error: "body must be JSON" });
+    }
     if (body.mode !== "on" && body.mode !== "off") {
       return send(req, res, 400, { error: "mode must be on or off" });
     }

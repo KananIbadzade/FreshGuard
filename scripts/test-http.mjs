@@ -100,6 +100,8 @@ try {
 
   const badMode = await post("/run", { mode: "maybe" });
   check("POST /run with a bad mode returns 400", badMode.status === 400, badMode.status);
+  const badJson = await fetch(`${base}/run`, { method: "POST", headers: { Origin: UI }, body: "{not json" });
+  check("POST /run with malformed JSON returns 400", badJson.status === 400, badJson.status);
   const get = await fetch(`${base}/run-both`);
   check("GET returns 404", get.status === 404, get.status);
 
