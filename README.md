@@ -15,4 +15,16 @@ The full context for a new teammate is [PROJECT_BRIEF.md](PROJECT_BRIEF.md).
 - `docs/founders_inc_nighthack_logistics_strategy.md` — NightHack timing and sponsors.
 - `docs/when_agent_context_goes_stale.pdf` and `docs/real_faults_in_mcp.pdf` — the two papers.
 
-Code coming soon. Built step by step at Founders Inc. NightHack.
+## How to run
+
+Requires Node 22.18+. Copy `.env.local.example` to `.env.local` and set `ANTHROPIC_API_KEY`, then `npm install`. Start each in its own terminal:
+
+```bash
+npm run dev:convex   # local Convex backend, port 3210
+npm run dev:agent    # agent HTTP server, port 8787
+npm run dev:ui       # Vite UI, port 5173
+```
+
+Open http://127.0.0.1:5173 and press **Run both**.
+
+Built step by step at Founders Inc. NightHack.

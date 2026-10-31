@@ -147,10 +147,10 @@ gantt
 - Test (T2 running):
 
   ```bash
-  curl -s -X POST http://127.0.0.1:8787/run-both | jq -c '{off:.off.commits,on:.on.commits}'
+  curl -s -w ' %{http_code}\n' -X POST http://127.0.0.1:8787/run-both
   ```
 
-- Expect: `{"off":[{"sku":"H100","pricePerHour":10}],"on":[{"sku":"A100","pricePerHour":3}]}`
+- Expect: `{"runId":"<uuid>"} 202`, returned right away. The run continues in the background and its result lands in Convex: the "off" column ends with `COMMIT` H100 at $10 and the "on" column with `STALE`, then `COMMIT` A100 at $3, each followed by `FINAL` for that `runId`. `npm run test:live` checks those receipts.
 
 ### T1. `feat: scaffold Vite app with Convex provider` (TM, branch `ui`, 15m)
 

@@ -242,11 +242,12 @@ The same prompt is used for both modes. If a live run is flaky, change this text
 
 | Request | Behavior |
 |---|---|
-| `POST /run-both` | Check env, `resetDemo`, both agents, barrier reprice. Body is `{ runId, off, on }`. Each side is `{ mode, runId, summary, commits, staleCount }` |
-| `POST /run` | JSON `{ "mode": "on" \| "off" }`. One agent, no reprice |
+| `POST /run-both` | Check env, `resetDemo`, start both agents with the barrier reprice. Returns `202 { runId }` right away; `409` if a run is already in progress. Results arrive as Convex events: each agent ends with a `FINAL` row for that `runId`, or `FINAL "run failed: …"` if it threw. The lock is released only after both agents settle |
+| `POST /run` | JSON `{ "mode": "on" \| "off" }`. One agent, no reprice. Returns `202 { runId }`. Malformed JSON is `400` |
+| `POST /reset` | `resetDemo`. `409` while a run is in progress |
 | `OPTIONS` | CORS preflight |
 
-CORS allows `http://localhost:5173` and `http://127.0.0.1:5173`. Vite is currently started on `127.0.0.1`. A browser on `localhost` still works because both origins are listed. Other origins get `http://127.0.0.1:5173` as `Access-Control-Allow-Origin` and the browser will reject them.
+CORS allows `http://localhost:5173` and `http://127.0.0.1:5173`. Vite is currently started on `127.0.0.1`. A browser on `localhost` still works because both origins are listed. A request whose `Origin` header is set to anything else gets `403` before any handler runs: a bodyless cross-site POST is a CORS simple request and skips the preflight, so response headers alone would not stop it. Requests with no `Origin` header (curl, Node scripts) are allowed.
 
 The UI posts to `http://127.0.0.1:8787` directly. There is no Vite proxy.
 
@@ -256,7 +257,7 @@ Plain CSS, no component library. Dark background. `src/App.tsx` subscribes with 
 
 Top strip: one card per GPU, availability, price, and a version badge. The badge replays a short flash when `version` changes. That is the visible "the world moved" cue during the reprice.
 
-Two columns, **Without FreshGuard** (`mode: "off"`) and **With FreshGuard** (`mode: "on"`). A `STALE` event is a red card and the sentence is built from the payload:
+Two columns, **Without FreshGuard** (`mode: "off"`) and **With FreshGuard** (`mode: "on"`). Each column shows only events for the current `runId`, or the newest run after a reload or a CLI run. A `STALE` event is a red card and the sentence is built from the payload:
 
 > Stale: you saw v1, it's now v2. Re-read and re-plan.
 
@@ -268,9 +269,9 @@ Buttons:
 
 | Button | Effect |
 |---|---|
-| Run both | `POST /run-both`. Disabled while the request is in flight |
-| Reprice H100 → $10 | `externalReprice` |
-| Reset | `resetDemo` |
+| Run both | `POST /run-both`. Disabled until both columns have a `FINAL` for that `runId`, or 120 seconds pass |
+| Reprice H100 → $10 | `externalReprice`. Disabled during a run |
+| Reset | `POST /reset`, or `resetDemo` directly when the agent server is down. Stays enabled during a run |
 | Stampede A100 | See below |
 
 Errors from those actions render as a line above the inventory. They are cleared by Reset and by Run both.
