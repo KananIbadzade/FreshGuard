@@ -9,6 +9,8 @@
     "dev:convex": "convex dev",
     "dev:agent": "node --env-file=.env.local agent/http.ts",
     "dev:ui": "vite",
+    "test": "npm run test:writes && npm run test:race",
+    "test:writes": "node --env-file=.env.local scripts/test-writes.mjs",
     "test:race": "node --env-file=.env.local scripts/race-test.mjs",
     "agent": "node --env-file=.env.local agent/cli.ts"
   },
