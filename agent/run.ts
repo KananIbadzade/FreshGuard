@@ -198,10 +198,13 @@ export async function runAgent(
           },
         ],
       });
+      // Keep the same tools list: thinking blocks in the history are bound to it.
       const finalResponse = await anthropic.messages.create({
         model,
-        max_tokens: 200,
+        max_tokens: 1024,
         system: SYSTEM_PROMPT,
+        tools,
+        tool_choice: { type: "none" },
         messages,
       });
       summary = joinText(finalResponse.content);
