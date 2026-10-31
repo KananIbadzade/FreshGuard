@@ -43,6 +43,47 @@ body {
   color: var(--muted);
 }
 
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+button {
+  font: inherit;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #000;
+}
+
+.error-line {
+  margin: 0 0 16px;
+  padding: 8px 12px;
+  border: 1px solid var(--red);
+  border-radius: 8px;
+  color: #ffd7d5;
+  background: rgba(248, 81, 73, 0.15);
+}
+
 .inventory {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
