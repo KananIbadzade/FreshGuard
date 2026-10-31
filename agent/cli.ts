@@ -1,6 +1,7 @@
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../convex/_generated/api.js";
 import { runAgent, type RunResult } from "./run.ts";
+import { runBoth } from "./runBoth.ts";
 
 const BUDGET = 6;
 
@@ -12,16 +13,19 @@ function receipt(result: RunResult) {
 }
 
 const mode = process.argv[2];
-if (mode !== "on" && mode !== "off") {
-  console.error("usage: npm run agent -- on|off");
+
+if (mode === "both") {
+  const { off, on } = await runBoth();
+  console.log(`${receipt(off)} | ${receipt(on)}`);
+} else if (mode === "on" || mode === "off") {
+  const convexUrl = process.env.CONVEX_URL || process.env.VITE_CONVEX_URL;
+  if (!convexUrl) {
+    console.error("CONVEX_URL is not set");
+    process.exit(1);
+  }
+  await new ConvexHttpClient(convexUrl).mutation(api.inventory.resetDemo, {});
+  console.log(receipt(await runAgent(mode, crypto.randomUUID())));
+} else {
+  console.error("usage: npm run agent -- on|off|both");
   process.exit(1);
 }
-
-const convexUrl = process.env.CONVEX_URL || process.env.VITE_CONVEX_URL;
-if (!convexUrl) {
-  console.error("CONVEX_URL is not set");
-  process.exit(1);
-}
-
-await new ConvexHttpClient(convexUrl).mutation(api.inventory.resetDemo, {});
-console.log(receipt(await runAgent(mode, crypto.randomUUID())));
