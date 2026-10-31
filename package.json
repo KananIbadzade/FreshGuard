@@ -1,0 +1,30 @@
+{
+  "name": "freshguard",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "dev:convex": "convex dev",
+    "dev:agent": "node --env-file=.env.local agent/http.ts",
+    "dev:ui": "vite",
+    "test:race": "node --env-file=.env.local scripts/race-test.mjs",
+    "agent": "node --env-file=.env.local agent/cli.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.67.1",
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "convex": "1.49.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^5.0.2",
+    "typescript": "^5.9.2",
+    "vite": "7.3.7"
+  }
+}

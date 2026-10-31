@@ -1,0 +1,6 @@
+---
+description: No extra markdown files
+alwaysApply: true
+---
+
+Never create new .md files unless asked. Scratch notes go in scratch/ (gitignored).
