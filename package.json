@@ -1,7 +1,27 @@
 {
   "name": "freshguard",
+  "version": "0.1.0",
   "private": true,
+  "description": "MCP tools that reject agent writes based on a stale read, with a READ_AND_REPLAN signal the agent can act on.",
+  "keywords": [
+    "mcp",
+    "agents",
+    "ai-safety",
+    "optimistic-concurrency"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KananIbadzade/FreshGuard.git"
+  },
+  "license": "MIT",
   "type": "module",
+  "bin": {
+    "freshguard-mcp": "mcp/server.mjs"
+  },
+  "files": [
+    "mcp/",
+    "convex/"
+  ],
   "engines": {
     "node": ">=22.18"
   },

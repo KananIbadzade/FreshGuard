@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { ConvexHttpClient } from "convex/browser";
 import { ConvexError } from "convex/values";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
