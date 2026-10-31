@@ -27,4 +27,42 @@ npm run dev:ui       # Vite UI, port 5173
 
 Open http://127.0.0.1:5173 and press **Run both**.
 
+## Use it with your agent
+
+FreshGuard is a stdio MCP server. Cursor picks up `.cursor/mcp.json` when you open this repo. For Claude Desktop, add the same entry to `~/Library/Application Support/Claude/claude_desktop_config.json` with an absolute path:
+
+```json
+{
+  "mcpServers": {
+    "freshguard-on": {
+      "command": "node",
+      "args": ["/absolute/path/to/FreshGuard/mcp/server.mjs"],
+      "env": { "FRESHGUARD": "on", "CONVEX_URL": "http://127.0.0.1:3210" }
+    }
+  }
+}
+```
+
+`npm run dev:convex` must be running. `FRESHGUARD=off` gives the unguarded version for comparison.
+
+| Tool | Input | Returns |
+|---|---|---|
+| `read_inventory` | none | `{ items: [{ sku, name, available, pricePerHour, version }] }` |
+| `reserve_inventory` | `sku`, `expectedVersion` (the row's `version` from your last read) | `{ success: true, ... }` or an error |
+
+If the row changed since the agent read it, the write is rejected with:
+
+```json
+{ "code": "STALE_DEPENDENCY", "sku": "A100", "observedVersion": 1, "currentVersion": 2, "requiredAction": "READ_AND_REPLAN" }
+```
+
+The agent should call `read_inventory` again and re-plan, not retry the same call.
+
+### Try it in Cursor
+
+1. Enable `freshguard-on` in Cursor's MCP settings, then ask the agent: "Using freshguard-on, plan to reserve the cheapest GPU. Don't reserve yet."
+2. In a terminal: `npm run reprice -- A100 9`
+3. Tell the agent: "Go ahead and reserve it."
+4. Watch it get `STALE_DEPENDENCY`, call `read_inventory` again, and switch to the H100, which is now cheaper at $5.
+
 Built step by step at Founders Inc. NightHack.
