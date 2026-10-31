@@ -11,7 +11,14 @@ if (!convexUrl) {
   process.exit(1);
 }
 
-const convex = new ConvexHttpClient(convexUrl);
+// stdout carries MCP protocol only. Convex's default logger prints function logs with console.log.
+const stderrLogger = {
+  log: console.error,
+  warn: console.error,
+  error: console.error,
+  logVerbose: () => {},
+};
+const convex = new ConvexHttpClient(convexUrl, { logger: stderrLogger });
 const guarded = process.env.FRESHGUARD === "on";
 
 function errorPayload(err) {
@@ -19,6 +26,7 @@ function errorPayload(err) {
   if (err && typeof err === "object" && "data" in err && err.data && typeof err.data === "object") {
     return err.data;
   }
+  console.error(err);
   return {
     code: "ERROR",
     message: err instanceof Error ? err.message : String(err),
@@ -43,16 +51,20 @@ server.registerTool(
     annotations: { readOnlyHint: true },
   },
   async () => {
-    const rows = await convex.query(api.inventory.list, {});
-    return jsonResult({
-      items: rows.map((item) => ({
-        sku: item.sku,
-        name: item.name,
-        available: item.available,
-        pricePerHour: item.pricePerHour,
-        version: item.version,
-      })),
-    });
+    try {
+      const rows = await convex.query(api.inventory.list, {});
+      return jsonResult({
+        items: rows.map((item) => ({
+          sku: item.sku,
+          name: item.name,
+          available: item.available,
+          pricePerHour: item.pricePerHour,
+          version: item.version,
+        })),
+      });
+    } catch (err) {
+      return jsonResult(errorPayload(err), true);
+    }
   },
 );
 

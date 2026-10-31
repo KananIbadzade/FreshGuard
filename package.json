@@ -16,7 +16,8 @@
     "test:agent": "node --env-file=.env.local scripts/test-agent.mjs",
     "test:http": "node --env-file=.env.local scripts/test-http.mjs",
     "test:race": "node --env-file=.env.local scripts/race-test.mjs",
-    "agent": "node --env-file=.env.local agent/cli.ts"
+    "agent": "node --env-file=.env.local agent/cli.ts",
+    "reprice": "node --env-file=.env.local scripts/cursor-reprice.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.67.1",

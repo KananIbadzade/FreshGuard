@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "freshguard-on": {
+      "command": "node",
+      "args": ["${workspaceFolder}/mcp/server.mjs"],
+      "env": {
+        "FRESHGUARD": "on",
+        "CONVEX_URL": "http://127.0.0.1:3210"
+      }
+    },
+    "freshguard-off": {
+      "command": "node",
+      "args": ["${workspaceFolder}/mcp/server.mjs"],
+      "env": {
+        "FRESHGUARD": "off",
+        "CONVEX_URL": "http://127.0.0.1:3210"
+      }
+    }
+  }
+}
