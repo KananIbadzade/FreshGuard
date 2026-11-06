@@ -15,7 +15,7 @@ The reprice in **Run both** is scripted. The agent's reaction is live. Say that 
 
 ## Which document won
 
-`CURSOR_PROMPT.md` is the build contract. The files under `docs/` are research and earlier designs. Where they conflict, the prompt and this code win.
+This file is the record of what shipped. Where earlier notes disagreed with the code, this file and the code win.
 
 | Earlier docs | What the code does |
 |---|---|
@@ -24,7 +24,7 @@ The reprice in **Run both** is scripted. The agent's reaction is live. Say that 
 | Error field `expectedVersion` | Error field `observedVersion` (the version the caller claimed to have seen) plus `currentVersion` |
 | One agent and a manual "continue" pause | Two agents in parallel. `/run-both` pauses both after the first read, then reprices |
 | `version_id`, boolean `available` | Integer `version`, numeric `available` (unit count) |
-| MCP packages `@modelcontextprotocol/server` and `client` (SDK v2) | `@modelcontextprotocol/sdk` 1.32, as the prompt named |
+| MCP packages `@modelcontextprotocol/server` and `client` (SDK v2) | `@modelcontextprotocol/sdk` 1.32 |
 
 Things the docs describe and this repo does not implement: multi-resource dependency sets, auth, audit history beyond the last 30 events, cloud deploy, a manual continue button, quantity other than 1.
 
@@ -280,7 +280,7 @@ Errors from those actions render as a line above the inventory. They are cleared
 
 ## Stampede
 
-There is no Stampede button. `CURSOR_PROMPT.md` lists that button as phase 5 and the first thing to cut, and `src/App.tsx` never grew one. The same experiment is phase 1 of `scripts/race-test.mjs`: 20 `reserveGuarded` calls on a freshly reset A100, all with `expectedVersion` 1, fired together with `skipQueue: true` so the HTTP client does not serialize them.
+There is no Stampede button. It was a later-phase idea and the first thing cut, and `src/App.tsx` never grew one. The same experiment is phase 1 of `scripts/race-test.mjs`: 20 `reserveGuarded` calls on a freshly reset A100, all with `expectedVersion` 1, fired together with `skipQueue: true` so the HTTP client does not serialize them.
 
 Expected outcome: 1 commit, 19 `STALE_DEPENDENCY`, stock decreased by one, never negative. This holds even when A100 has 2 units, because the first commit bumps the version and the other 19 no longer match. The point is the version gate under concurrency, not "only one unit was left."
 

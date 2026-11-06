@@ -64,6 +64,10 @@ Built step by step at Founders Inc. NightHack.
 
 ## Docs
 
-- [PROJECT_BRIEF.md](PROJECT_BRIEF.md) — teammate context for the demo.
-- [docs/reference/](docs/reference/) — [DECISIONS.md](docs/reference/DECISIONS.md) (what we follow when notes disagree) and [CURSOR_PROMPT.md](docs/reference/CURSOR_PROMPT.md) (the build contract).
-- [When Agent Context Goes Stale](docs/when_agent_context_goes_stale.pdf) and [Real Faults in MCP Software](docs/real_faults_in_mcp.pdf).
+- [PROJECT_BRIEF.md](PROJECT_BRIEF.md) — short overview of the product.
+- [docs/reference/DECISIONS.md](docs/reference/DECISIONS.md) — schema, error contract, and what shipped.
+
+## References
+
+- [When Agent Context Goes Stale…](https://arxiv.org/abs/2610.05281)
+- [Real Faults in Model Context Protocol (MCP) Software…](https://arxiv.org/abs/2603.05637) (also published in ACM TOSEM)
