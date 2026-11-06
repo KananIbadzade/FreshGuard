@@ -152,7 +152,7 @@ Stale payload, exact fields:
 
 A successful reserve inserts `COMMIT` inside the mutation, with no `mode` and no `runId`. The agent then inserts a second `COMMIT` with `mode` and `runId`, using the mutation's return value as `detail`.
 
-The UI columns filter on `mode`, so they show the agent row and ignore the mutation row. The mutation row is still the transactional record: it exists even when the caller is the race test or the stampede button, which never talk to the model. Both rows count toward the latest-30 window. A normal paired run is well under 30.
+The UI columns filter on `mode`, so they show the agent row and ignore the mutation row. The mutation row is still the transactional record: it exists even when the caller is the race test, which never talks to the model. Both rows count toward the latest-30 window. A normal paired run is well under 30.
 
 `STALE` is only the agent's row, written after the mutation has already aborted.
 
@@ -275,17 +275,14 @@ Buttons:
 | Run both | `POST /run-both`. Disabled until both columns have a `FINAL` for that `runId`, or 120 seconds pass |
 | Reprice H100 → $10 | `externalReprice`. Disabled during a run except while a column's latest event is `THINKING`, so the operator can reprice in that pause. The button pulses then |
 | Reset | `POST /reset`, or `resetDemo` directly when the agent server is down. Stays enabled during a run |
-| Stampede A100 | See below |
 
 Errors from those actions render as a line above the inventory. They are cleared by Reset and by Run both.
 
 ## Stampede
 
-The button reads the current A100 version from the live query, then fires 20 `reserveGuarded` calls with that same `expectedVersion`. It does not go through MCP or the model. The counter is computed in the browser from the 20 results, then it re-reads inventory and reports whether any `available` is negative.
+There is no Stampede button. `CURSOR_PROMPT.md` lists that button as phase 5 and the first thing to cut, and `src/App.tsx` never grew one. The same experiment is phase 1 of `scripts/race-test.mjs`: 20 `reserveGuarded` calls on a freshly reset A100, all with `expectedVersion` 1, fired together with `skipQueue: true` so the HTTP client does not serialize them.
 
-Expected outcome: 1 commit, 19 `STALE_DEPENDENCY`, stock decreased by one, never negative. This holds even when A100 has 2 units, because the first commit bumps the version and the other 19 no longer match. The point of the button is the version gate under concurrency, not "only one unit was left."
-
-Phase 1 of `scripts/race-test.mjs` is the same experiment from Node, against a freshly reset A100 at version 1.
+Expected outcome: 1 commit, 19 `STALE_DEPENDENCY`, stock decreased by one, never negative. This holds even when A100 has 2 units, because the first commit bumps the version and the other 19 no longer match. The point is the version gate under concurrency, not "only one unit was left."
 
 ## Race test
 
@@ -307,7 +304,7 @@ Against the Vite app, with Convex running:
 
 - Reset restores H100 at 1 unit, $5, v1 and A100 at 2 units, $3, v1, and clears the trace.
 - Reprice moves only the H100 to $10, v2. The A100 stays v1.
-- Stampede reports `1 committed, 19 stale, inventory never negative`. A100 goes from 2 units at v1 to 1 unit at v2.
+- The 20-way stampede is not a page control. Phase 1 of `npm run test:race` reports 1 commit, 19 stale, and A100 at 1 unit, v2.
 - Run both from the page reaches the agent, CORS accepts it, and a missing key is shown in the page. Inventory is not reset in that failure.
 
 Not verified: five live `/run-both` calls with a model. There is no API key in the environment or in nearby env files. Until `ANTHROPIC_API_KEY` and `ANTHROPIC_MODEL` are set and `dev:agent` is restarted, the phase 3 gate has not passed. If those runs flake, tighten `agent/systemPrompt.ts` and the tool descriptions first.
@@ -323,7 +320,7 @@ Not verified: five live `/run-both` calls with a model. There is no API key in t
 | `agent/run.ts` | Claude tool loop and event logging |
 | `agent/http.ts` | `/run`, `/run-both`, barrier |
 | `src/main.tsx` | `ConvexProvider` |
-| `src/App.tsx` | Buttons, queries, stampede |
+| `src/App.tsx` | Buttons, queries, goal banner |
 | `src/InventoryPanel.tsx` | Live rows, version flash |
 | `src/TracePanel.tsx` | Columns, stale card, receipt |
 | `src/styles.css` | Demo styling |
