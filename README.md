@@ -2,7 +2,7 @@
 
 Stripe idempotency keys stopped duplicate charges; FreshGuard stops stale ones.
 
-Demo video: https://youtu.be/nEr3RoQvHDU
+Demo video: https://youtu.be/2hIxNXGYd9s
 
 An agent reads the world, thinks, then writes. The write sends back the `version` it saw. If that row changed, the write is rejected with `STALE_DEPENDENCY` and the agent re-reads instead of retrying.
 
