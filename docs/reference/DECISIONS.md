@@ -99,9 +99,9 @@ Every write path bumps `version` by 1: guarded reserve, unguarded reserve, exter
 
 | Field | Role |
 |---|---|
-| `kind` | `COMMIT`, `EXTERNAL`, `READ`, `TOOL_CALL`, `STALE`, `FINAL` |
+| `kind` | `COMMIT`, `EXTERNAL`, `READ`, `THINKING`, `TOOL_CALL`, `STALE`, `FINAL` |
 | `sku` | Optional. Final summaries have no sku |
-| `detail` | JSON string, except `FINAL`, which is the model's one-line text |
+| `detail` | JSON string, except `FINAL` (the model's one-line text) and `THINKING` (`Thinking…`) |
 | `mode` | `"on"` or `"off"` for agent steps. Absent on mutation-written rows |
 | `runId` | Shared by the two agents in one `/run-both` |
 
@@ -205,6 +205,7 @@ Logging map:
 |---|---|
 | Every tool invocation | `TOOL_CALL` |
 | `read_inventory` result | `READ` |
+| After a successful read, before the next model turn | `THINKING` (`Thinking…`, 3s) |
 | Reserve payload with `code: STALE_DEPENDENCY` | `STALE` |
 | Reserve payload with `success: true` | `COMMIT` |
 | Model's closing line | `FINAL` |
@@ -217,7 +218,9 @@ That stop is deliberate. The unguarded success payload includes `pricePerHour: 1
 
 `/run-both` runs both modes on one `runId`. After each agent's first `read_inventory` tool returns, `runAgent` awaits `afterFirstRead` before the tool result is given back to the model.
 
-The HTTP handler counts those arrivals. The second arrival calls `externalReprice({ sku: "H100", pricePerHour: 10 })` and then resolves the shared promise. Both agents then continue. The text they receive is the snapshot captured before the await, still H100 at $5 version 1. They must not be handed a fresh read here. A fresh read would show $10, the interesting write would never be attempted, and both columns would buy the A100.
+The HTTP handler counts those arrivals. The second arrival resolves the shared promise. It does not reprice yet. Both agents then log a `THINKING` event and wait 3 seconds before the tool result is given back to the model. That pause is the window for the manual Reprice button. After the pause, if H100 is still the seed ($5, version 1), the server calls `externalReprice({ sku: "H100", pricePerHour: 10 })`. If the operator already moved that row, the scripted reprice is skipped so the click is not followed by a second version bump.
+
+The text they receive is the snapshot captured before the pause, still H100 at $5 version 1. They must not be handed a fresh read here. A fresh read would show $10, the interesting write would never be attempted, and both columns would buy the A100. The same 3 second pause runs after every successful `read_inventory`, including the guarded re-read, on both modes. A failed read does not pause.
 
 The increment of the arrival counter happens before any await, so the two calls cannot both observe a count of 1. If either agent never reads, the other fails after 90 seconds instead of hanging the HTTP request.
 
@@ -270,7 +273,7 @@ Buttons:
 | Button | Effect |
 |---|---|
 | Run both | `POST /run-both`. Disabled until both columns have a `FINAL` for that `runId`, or 120 seconds pass |
-| Reprice H100 → $10 | `externalReprice`. Disabled during a run |
+| Reprice H100 → $10 | `externalReprice`. Disabled during a run except while a column's latest event is `THINKING`, so the operator can reprice in that pause. The button pulses then |
 | Reset | `POST /reset`, or `resetDemo` directly when the agent server is down. Stays enabled during a run |
 | Stampede A100 | See below |
 

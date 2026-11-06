@@ -38,6 +38,12 @@ export function App() {
   );
   const bothFinished = finished.has("off") && finished.has("on");
   const running = pending || (runId !== null && !bothFinished);
+  const thinking =
+    runId !== null &&
+    (["on", "off"] as const).some((mode) => {
+      const latest = (events ?? []).filter((e) => e.runId === runId && e.mode === mode).at(-1);
+      return latest?.kind === "THINKING";
+    });
 
   // If the agent server dies mid-run no FINAL arrives, so stop waiting.
   useEffect(() => {
@@ -101,11 +107,16 @@ export function App() {
           stale ones.
         </p>
       </header>
+      <p className="goal-banner">Agent goal: Buy the best GPU under $6/hr.</p>
       <div className="actions">
         <button className="primary" onClick={runBoth} disabled={running}>
           {running ? "Running…" : "Run both"}
         </button>
-        <button onClick={repriceH100} disabled={running}>
+        <button
+          onClick={repriceH100}
+          disabled={running && !thinking}
+          className={thinking ? "reprice-now" : undefined}
+        >
           Reprice H100 → $10
         </button>
         <button onClick={reset} disabled={pending}>
