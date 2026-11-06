@@ -4,9 +4,15 @@ const phaseOnly = process.argv.includes("--phase1");
 
 async function phase1() {
   await convex.mutation(api.inventory.resetDemo, {});
+  // skipQueue: the shared ConvexHttpClient otherwise runs mutations one at a time,
+  // so this would not actually overlap.
   const attempts = await Promise.all(
     Array.from({ length: 20 }, () =>
-      attempt(convex.mutation(api.inventory.reserveGuarded, { sku: "A100", expectedVersion: 1 })),
+      attempt(
+        convex.mutation(api.inventory.reserveGuarded, { sku: "A100", expectedVersion: 1 }, {
+          skipQueue: true,
+        }),
+      ),
     ),
   );
 

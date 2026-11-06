@@ -121,6 +121,22 @@ try {
   await stopServer(noKey);
 }
 
+const slowReset = await startServer({ ANTHROPIC_API_KEY: "", FRESHGUARD_RESET_DELAY_MS: "800" });
+try {
+  const resetPromise = post("/reset");
+  await sleep(100);
+  const duringBoth = await post("/run-both");
+  const duringRun = await post("/run", { mode: "on" });
+  check("POST /run-both during reset returns 409", duringBoth.status === 409, duringBoth.status);
+  check("POST /run during reset returns 409", duringRun.status === 409, duringRun.status);
+  const reset = await resetPromise;
+  check("reset that held the lock still returns 200", reset.status === 200, reset.status);
+  const after = await post("/reset");
+  check("lock is free after reset", after.status === 200, after.status);
+} finally {
+  await stopServer(slowReset);
+}
+
 async function waitForFinals(runId, timeoutMs = 150_000) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
