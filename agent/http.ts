@@ -69,8 +69,21 @@ function watch(runId: string, done: Promise<unknown>, failModes: Mode[]) {
 async function handle(req: http.IncomingMessage, res: http.ServerResponse) {
   if (req.url === "/reset") {
     if (busy) return send(req, res, 409, { error: "a run is in progress" });
-    await convex.mutation(api.inventory.resetDemo, {});
-    return send(req, res, 200, { ok: true });
+    // Hold the lock across the mutation. Otherwise a /run or /run-both that
+    // arrives while resetDemo is in flight can start, and this reset can commit
+    // afterwards and wipe that run.
+    busy = true;
+    try {
+      // Test-only. Lets scripts/test-http.mjs observe the lock.
+      const delay = Number(process.env.FRESHGUARD_RESET_DELAY_MS ?? 0);
+      if (Number.isFinite(delay) && delay > 0) {
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+      await convex.mutation(api.inventory.resetDemo, {});
+      return send(req, res, 200, { ok: true });
+    } finally {
+      busy = false;
+    }
   }
 
   if (req.url === "/run-both") {

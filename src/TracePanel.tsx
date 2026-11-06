@@ -33,6 +33,8 @@ function label(event: Event): string {
     case "COMMIT":
       if (data?.pricePerHour === undefined) break;
       return `${event.sku} at $${data.pricePerHour}/hr → v${data.version}`;
+    case "THINKING":
+      return "Thinking…";
     case "FINAL":
       return event.detail;
   }
@@ -52,6 +54,25 @@ function StaleCard({ event }: { event: Event }) {
       </div>
     </li>
   );
+}
+
+function TraceLabel({ event, highlightVersion }: { event: Event; highlightVersion: boolean }) {
+  if (event.kind === "TOOL_CALL" && highlightVersion) {
+    const data = parse(event.detail);
+    const input = data?.input ?? data?.args;
+    const version = input?.expectedVersion;
+    if (version !== undefined && version !== null) {
+      const name = data?.name ?? data?.tool ?? "tool";
+      const sku = input.sku !== undefined ? ` ${input.sku}` : "";
+      return (
+        <span className="trace-label">
+          {name}
+          {sku} <strong className="expected-version">expectedVersion {String(version)}</strong>
+        </span>
+      );
+    }
+  }
+  return <span className="trace-label">{label(event)}</span>;
 }
 
 function Receipt({ commit }: { commit: Event }) {
@@ -112,7 +133,7 @@ export function TracePanel({
             ) : (
               <li key={event._id} className={`trace-row kind-${event.kind}`}>
                 <span className="trace-kind">{event.kind}</span>
-                <span className="trace-label">{label(event)}</span>
+                <TraceLabel event={event} highlightVersion={mode === "on"} />
               </li>
             ),
           )}

@@ -18,7 +18,7 @@ export async function startBoth(): Promise<{ runId: string; done: Promise<BothRe
   await convex.mutation(api.inventory.resetDemo, {});
 
   let reads = 0;
-  let repriced = false;
+  let released = false;
   let release: () => void = () => {};
   const opened = new Promise<void>((resolve) => {
     release = resolve;
@@ -26,11 +26,11 @@ export async function startBoth(): Promise<{ runId: string; done: Promise<BothRe
 
   // Each agent pauses here with its first snapshot (H100 $5 v1) still unseen by the model.
   // The count must increase before any await so both arrivals cannot both see 1.
+  // Reprice waits until after the think pause (see afterThink) so a click can land first.
   const afterFirstRead = async () => {
     reads += 1;
-    if (reads >= 2 && !repriced) {
-      repriced = true;
-      await convex.mutation(api.inventory.externalReprice, { sku: "H100", pricePerHour: 10 });
+    if (reads >= 2 && !released) {
+      released = true;
       release();
     }
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -47,10 +47,23 @@ export async function startBoth(): Promise<{ runId: string; done: Promise<BothRe
     }
   };
 
+  // One reprice for the pair, after both agents have shown Thinking….
+  // If the operator already moved H100 off the seed during that pause, keep their edit.
+  let repriceOnce: Promise<void> | undefined;
+  const afterThink = () => {
+    repriceOnce ??= (async () => {
+      const items = await convex.query(api.inventory.list, {});
+      const h100 = items.find((item) => item.sku === "H100");
+      if (!h100 || h100.version !== 1 || h100.pricePerHour !== 5) return;
+      await convex.mutation(api.inventory.externalReprice, { sku: "H100", pricePerHour: 10 });
+    })();
+    return repriceOnce;
+  };
+
   // allSettled, not all: a failed agent must not release the caller while the other one can still write.
   const done = Promise.allSettled([
-    runAgent("off", runId, { afterFirstRead }),
-    runAgent("on", runId, { afterFirstRead }),
+    runAgent("off", runId, { afterFirstRead, afterThink }),
+    runAgent("on", runId, { afterFirstRead, afterThink }),
   ]).then(async ([off, on]) => {
     const settled = [
       ["off", off],

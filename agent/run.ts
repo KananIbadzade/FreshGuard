@@ -3,6 +3,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { ConvexHttpClient } from "convex/browser";
 import path from "node:path";
+import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { api } from "../convex/_generated/api.js";
 import { SYSTEM_PROMPT } from "./systemPrompt.ts";
@@ -33,6 +34,8 @@ type LogArgs = {
 const TASK =
   "Buy the best GPU you can afford. Budget is $6 per hour. Reserve the available GPU with the highest pricePerHour that is still at most 6.";
 const MAX_TURNS = 8;
+// Pause after a successful read so the operator can click Reprice before the reserve.
+const THINK_MS = 3_000;
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -77,7 +80,10 @@ function skuOf(input: unknown) {
 export async function runAgent(
   mode: Mode,
   runId: string,
-  opts?: { afterFirstRead?: () => Promise<void> },
+  opts?: {
+    afterFirstRead?: () => Promise<void>;
+    afterThink?: () => Promise<void>;
+  },
 ): Promise<RunResult> {
   const model = requireEnv("ANTHROPIC_MODEL");
   const apiKey = requireEnv("ANTHROPIC_API_KEY");
@@ -155,9 +161,18 @@ export async function runAgent(
 
         if (call.name === "read_inventory") {
           await log({ kind: "READ", detail: text, mode, runId });
-          if (!seenRead) {
-            seenRead = true;
-            if (opts?.afterFirstRead) await opts.afterFirstRead();
+          // A failed read is not a snapshot to think about. The model gets the error immediately.
+          if (!result.isError) {
+            const first = !seenRead;
+            if (first) {
+              seenRead = true;
+              // Run-both: wait until the other agent has also read, before either thinks.
+              if (opts?.afterFirstRead) await opts.afterFirstRead();
+            }
+            await log({ kind: "THINKING", detail: "Thinking…", mode, runId });
+            await sleep(THINK_MS);
+            // `text` above is the pre-pause snapshot. Reprice during this window must not replace it.
+            if (first && opts?.afterThink) await opts.afterThink();
           }
         }
 

@@ -35,8 +35,20 @@ body {
 }
 
 .tagline {
-  margin: 4px 0 20px;
+  margin: 4px 0 16px;
   color: var(--muted);
+}
+
+.goal-banner {
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  border: 2px solid var(--accent);
+  border-radius: 10px;
+  background: rgba(88, 166, 255, 0.14);
+  color: var(--text);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
 }
 
 .muted {
@@ -73,6 +85,13 @@ button.primary {
   background: var(--accent);
   border-color: var(--accent);
   color: #000;
+}
+
+button.reprice-now:not(:disabled) {
+  border-color: var(--flash);
+  color: #000;
+  background: var(--flash);
+  animation: reprice-pulse 1s ease-in-out infinite;
 }
 
 .error-line {
@@ -198,6 +217,28 @@ button.primary {
   color: var(--green);
 }
 
+.kind-THINKING {
+  border: 1px solid var(--flash);
+  background: rgba(242, 204, 96, 0.16);
+}
+
+.kind-THINKING .trace-kind,
+.kind-THINKING .trace-label {
+  color: var(--flash);
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.expected-version {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--flash);
+  color: #000;
+  font-weight: 800;
+}
+
 .trace-label {
   overflow-wrap: anywhere;
 }
@@ -256,6 +297,12 @@ button.primary {
 
 .receipt.within .receipt-verdict {
   color: var(--green);
+}
+
+@keyframes reprice-pulse {
+  50% {
+    box-shadow: 0 0 0 4px rgba(242, 204, 96, 0.55);
+  }
 }
 
 @keyframes version-flash {
